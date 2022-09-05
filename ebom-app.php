@@ -94,8 +94,7 @@ class Ebom_App
 
         dbDelta($sql);
     }
-    public function Deactivation() 
-    { 
+    public function Deactivation() { 
         global $wpdb;
         $table = $wpdb->prefix . 'settings';
         $sql = "DROP TABLE IF EXISTS $table"; 
@@ -469,7 +468,8 @@ class Ebom_App
                 'sslverify'   => 'false'
             )
         );
-        if($resp['body']){
+        if($resp['body'])
+        {
             $response = preg_replace("/(<\/?)(\w+):([^>]*>)/", "$1$2$3", $resp['body']);
             $xml = new \SimpleXMLElement($response);
             
