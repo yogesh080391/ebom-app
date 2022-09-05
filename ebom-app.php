@@ -18,25 +18,25 @@ class Ebom_App
     }
     public function PluginMenu()
     {
-        {
-            $this->my_plugin_screen_name = add_menu_page(
-                'Ebom App',
-                'Ebom App',
-                'manage_options',
-                'ebom-app',
-                array($this, 'EbomApp'),
-                plugins_url('/ebom-app/images/icon.jpg', __DIR__),
-                36
-            );
-            $this->my_plugin_screen_name = add_submenu_page(
-                $parent_slug='ebom-app', 
-                $page_title='Ebom App Setting',
-                $menu_title='Setting', 
-                'manage_options', 
-                'ebom-app-setting', 
-                array($this, 'EbomAppSetting')
-            );
-        }
+        
+        $this->my_plugin_screen_name = add_menu_page(
+            'Ebom App',
+            'Ebom App',
+            'manage_options',
+            'ebom-app',
+            array($this, 'EbomApp'),
+            plugins_url('/ebom-app/images/icon.png', __DIR__),
+            36
+        );
+        $this->my_plugin_screen_name = add_submenu_page(
+            $parent_slug='ebom-app', 
+            $page_title='Ebom App Setting',
+            $menu_title='Setting', 
+            'manage_options', 
+            'ebom-app-setting', 
+            array($this, 'EbomAppSetting')
+        );
+        
     }
     public function InitPlugin()
     {
@@ -51,7 +51,8 @@ class Ebom_App
 
     }
 
-    public function Activate() {
+    public function Activate() 
+    {
 
         global $wpdb;
         global $jal_db_version;
@@ -93,7 +94,8 @@ class Ebom_App
 
         dbDelta($sql);
     }
-    public function Deactivation() { 
+    public function Deactivation() 
+    { 
         global $wpdb;
         $table = $wpdb->prefix . 'settings';
         $sql = "DROP TABLE IF EXISTS $table"; 
@@ -307,7 +309,8 @@ class Ebom_App
         </div>
     <?php
     }
-    public function CheckoutOrderProcessed($order_id){
+    public function CheckoutOrderProcessed($order_id)
+    {
 
         global $wpdb;
         $table_order = $wpdb->prefix . 'orders';
@@ -400,8 +403,8 @@ class Ebom_App
         {
             $url = "https://integrateembworks.bluerocket.co.nz/jobconsumer.asmx"; // dev url
         }
-
-        if($result = $this->SendCurl($xml,$url)){
+        $directory_path = plugin_dir_path( __DIR__).'ebom-app/xml/';
+        if($result = $this->PostWP($xml,$url)){
             
             if($result['ResultCode'] == '00'){
                 $status =  'success';
@@ -420,48 +423,66 @@ class Ebom_App
 
                 }
             }
+             
+            file_put_contents($directory_path.'/'.$order_id."-order.xml",$xml);
         }
 
         $sql ="update $table_order set status='$status',error='$error' where order_id=".$order_id;
         $wpdb->query($sql);
-    }
-    
-    public function SendCurl($xml,$url)
-    {
-
-        $curl = curl_init($url);
-        curl_setopt($curl, CURLOPT_URL, $url);
-        curl_setopt($curl, CURLOPT_POST, true);
-        curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
-
-        $headers = array(
-            "Content-Type: text/xml",
-            "Accept: text/xml",
-        );
-        curl_setopt($curl, CURLOPT_HTTPHEADER, $headers);
-
-        curl_setopt($curl, CURLOPT_POSTFIELDS, $xml);
-
-        //for debug only!
-        curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, false);
-        curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
-
-        $resp = curl_exec($curl);
-        curl_close($curl);
-
-        $response = preg_replace("/(<\/?)(\w+):([^>]*>)/", "$1$2$3", $resp);
-        $xml = new \SimpleXMLElement($response);
-       
-        $array = json_decode(json_encode((array)$xml), TRUE); 
-        
-        if(!empty($array)){
-
-            if(isset($array['soapBody']) && isset($array['soapBody']['JobPublishResponse'])) {
-                return $array['soapBody']['JobPublishResponse']['JobPublishResult'];
-            }
-
+        if($status ==  'error'){
+            $this->SendMail($order_id,$error);
         }
+        unlink($directory_path.'/'.$order_id."-order.xml");
+    }
+    public function SendMail($order_id,$error)
+    {
+        $directory_path = plugin_dir_path( __DIR__).'ebom-app/xml/'; 
 
+        $attachments = array( $directory_path . '/'.$order_id.'-order.xml' );
+        
+        $admin_email = get_option( 'admin_email' );
+        
+        $subject = "Faild to Save Order";
+        $body = $error;
+        $headers = array('Content-Type: text/html; charset=UTF-8','From: Me Myself <'.$admin_email .'>');
+
+        if(wp_mail( $admin_email , $subject, $body, $headers,$attachments)){
+            return true;
+        }
+        else{
+            return false;
+        }
+        
+        
+    }
+    public function PostWP($xml,$url)
+    {
+        $resp = wp_remote_post(
+            $url,
+            array(
+                'method'      => 'POST',
+                'headers'     => array(
+                    'Content-Type' => 'text/xml',
+                    "Accept: text/xml",
+                ),
+                'body'        => $xml,
+                'sslverify'   => 'false'
+            )
+        );
+        if($resp['body']){
+            $response = preg_replace("/(<\/?)(\w+):([^>]*>)/", "$1$2$3", $resp['body']);
+            $xml = new \SimpleXMLElement($response);
+            
+            $array = json_decode(json_encode((array)$xml), TRUE); 
+            
+            if(!empty($array)){
+
+                if(isset($array['soapBody']) && isset($array['soapBody']['JobPublishResponse'])) {
+                    return $array['soapBody']['JobPublishResponse']['JobPublishResult'];
+                }
+
+            }
+        }
         return false;
 
     }
