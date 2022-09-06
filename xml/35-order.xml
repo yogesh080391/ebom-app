@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+        <soap12:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap12="http://www.w3.org/2003/05/soap-envelope">
+            <soap12:Body>    
+                <JobPublish xmlns="http://embroideryworks.co.nz/">
+                <job>
+                    <authorization>
+                        <customerid>2002</customerid>
+                        <username>AnnaR</username>
+                        <password>Tobykins9</password>
+                        <guid>07b70c18-376c-4339-a9bc-4b74c96ab8e6</guid>
+                    </authorization>
+                    <header>
+                        <purchaseorderid>35</purchaseorderid>
+                        <duedate>
+                            <year>2022</year>
+                            <month>09</month>
+                            <day>06</day>
+                        </duedate>
+                        <comments></comments>
+                        <description>BOM Order #35</description>
+                        <deliverydetails>
+                            <name>Y Sharma</name>
+                            <company>Company</company>
+                            <phone>197654</phone>
+                            <email>yogesh.610weblab@gmail.com</email>
+                            <addressline1>#102</addressline1>
+                            <addressline2></addressline2>
+                            <addressline3>Mohali</addressline3>
+                            <addressline4>152161</addressline4>
+                            <deliverymethod></deliverymethod>
+                        </deliverydetails>
+                        <auxilliary>
+                            <string1></string1>
+                            <string2></string2>
+                            <string3></string3>
+                            <string4></string4>
+                        </auxilliary>
+                    </header>
+                    <boms><bom>
+                        <code>BOM11821-6</code>
+                        <size></size>
+                        <quantity>2</quantity>
+                    </bom></boms></job></JobPublish></soap12:Body>
+        </soap12:Envelope>

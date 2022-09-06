@@ -425,16 +425,26 @@ class Ebom_App
              
             file_put_contents($directory_path.'/'.$order_id."-order.xml",$xml);
         }
-
+        
         $sql ="update $table_order set status='$status',error='$error' where order_id=".$order_id;
         $wpdb->query($sql);
         if($status ==  'error'){
-            $this->SendMail($order_id,$error);
+            $this->SendMail($order_id,$result);
         }
         unlink($directory_path.'/'.$order_id."-order.xml");
     }
-    public function SendMail($order_id,$error)
+    public function SendMail($order_id,$result)
     {
+        $ResultCode = $result['ResultCode'];
+        $JobNumber = $result['JobNumber'];
+        if($result['Errors']['Error']['ErrorMessage']){
+            $ErrorMessage = $result['Errors']['Error']['ErrorMessage'];
+            $ErrorCode = $result['Errors']['Error']['ErrorCode'];
+        }
+        else{
+            $ErrorMessage = $result['Errors']['Error'][0]['ErrorMessage'];
+            $ErrorCode = $result['Errors']['Error'][0]['ErrorCode'];
+        }
         $directory_path = plugin_dir_path( __DIR__).'ebom-app/xml/'; 
 
         $attachments = array( $directory_path . '/'.$order_id.'-order.xml' );
@@ -442,9 +452,55 @@ class Ebom_App
         $admin_email = get_option( 'admin_email' );
         
         $subject = "Faild to Save Order";
-        $body = $error;
-        $headers = array('Content-Type: text/html; charset=UTF-8','From: Me Myself <'.$admin_email .'>');
+        ob_start();
+        include("email_header.php");
+        ?>
+        <table role="presentation" border="0" cellpadding="0" cellspacing="10px" style="padding: 30px 30px 0px 60px;">
+            <tr>
+                <td>
+                    <h2>EWJobLoader has failed at some point trying to integrate a job.</h2>
+                    <p>View the following steps and details below. </p>
+                    <p>JOB LOADED: False </p>
+                    <p>NOTIFICATIONS SENT: False</p>
+                </td>
+            </tr>
+        </table>    
+        <table role="presentation" border="0" cellpadding="0" cellspacing="10px" style="padding: 0px 30px 0px 60px;">
+            <tr>
+                <td>
+                    <h2> Job details follow. </h2>
+                    <p>PO Number:<?php echo $order_id; ?></p>      
+                </td>
+            </tr>
+        </table> 
+        <table role="presentation" cellpadding="0" cellspacing="10px" style="padding: 0px 30px 0px 60px;" >
+            <tr>
+                <td>
+                    <h2> The job publish response generated these details. </h2>
+                    <p>Job Number: <?php echo $JobNumber; ?></p> 
+                    <p>Result Code: <?php echo $ResultCode; ?></p>  
+                    <p>Error Code: <?php echo $ErrorCode; ?></p>  
+                    <p>Error Message: <?php echo $ErrorMessage; ?></p>       
+                    
+                </td>
+            </tr>
+        </table> 
+        <table role="presentation" bgcolor="#EAF0F6" width="100%" style="margin-top: 50px;" >
+            <tr>
+                <td align="center" style="padding: 30px 30px;">
+                    <h2> Enumerable Errors</h2>
+                    <p>embroideryworks.JobPublishError</p> 
+                    <p>A file has been attached to this email, please use this to determine the cause.</p>          
+                </td>
+            </tr>
+        </table>
+        <?php
+        include("email_footer.php");
+        $body  = ob_get_contents();
+        ob_end_clean();
 
+        $headers = array('Content-Type: text/html; charset=UTF-8','From: Me Myself <'.$admin_email .'>');
+        
         if(wp_mail( $admin_email , $subject, $body, $headers,$attachments)){
             return true;
         }
