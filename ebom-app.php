@@ -451,7 +451,7 @@ class Ebom_App
         
         $admin_email = get_option( 'admin_email' );
         
-        $subject = "Faild to Save Order";
+        $subject = "EW Job Integration Failure Notification";
         ob_start();
         include("email_header.php");
         ?>
